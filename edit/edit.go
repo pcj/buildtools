@@ -20,7 +20,6 @@ package edit
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -37,20 +36,6 @@ var (
 	// DeleteWithComments if true a list attribute will be be deleted in ListDelete, even if there is a comment attached to it
 	DeleteWithComments = true
 )
-
-// isFile returns true if the path refers to a regular file after following
-// symlinks.
-func isFile(path string) bool {
-	path, err := filepath.EvalSymlinks(path)
-	if err != nil {
-		return false
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return info.Mode().IsRegular()
-}
 
 // InterpretLabelForWorkspaceLocation returns the name of the BUILD file to
 // edit, the full package name, and the rule. It takes a workspace-rooted
@@ -75,14 +60,14 @@ func InterpretLabelForWorkspaceLocation(root string, target string) (buildFile s
 	if strings.HasPrefix(target, "//") {
 		for _, buildFileName := range BuildFileNames {
 			buildFile = filepath.Join(rootDir, pkg, buildFileName)
-			if isFile(buildFile) {
+			if wspace.IsRegularFile(buildFile) {
 				return
 			}
 		}
 		buildFile = filepath.Join(rootDir, pkg, defaultBuildFileName)
 		return
 	}
-	if isFile(pkg) {
+	if wspace.IsRegularFile(pkg) {
 		// allow operation on other files like WORKSPACE
 		buildFile = pkg
 		pkg = filepath.Join(relativePath, filepath.Dir(pkg))
@@ -92,7 +77,7 @@ func InterpretLabelForWorkspaceLocation(root string, target string) (buildFile s
 	found := false
 	for _, buildFileName := range BuildFileNames {
 		buildFile = filepath.Join(pkg, buildFileName)
-		if isFile(buildFile) {
+		if wspace.IsRegularFile(buildFile) {
 			found = true
 			break
 		}
@@ -123,7 +108,7 @@ func ExprToRule(expr build.Expr, kind string) (*build.Rule, bool) {
 	if !ok || k.Name != kind {
 		return nil, false
 	}
-	return &build.Rule{call, ""}, true
+	return &build.Rule{Call: call, ImplicitName: ""}, true
 }
 
 // ExistingPackageDeclaration returns the package declaration, or nil if there is none.
@@ -163,7 +148,7 @@ func PackageDeclaration(f *build.File) *build.Rule {
 		all = append(all, call)
 	}
 	f.Stmt = all
-	return &build.Rule{call, ""}
+	return &build.Rule{Call: call, ImplicitName: ""}
 }
 
 // RemoveEmptyPackage removes empty package declarations from the file, i.e.:

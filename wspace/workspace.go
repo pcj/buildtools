@@ -29,6 +29,20 @@ import (
 const workspaceFile = "WORKSPACE"
 const buildFile = "BUILD"
 
+// IsRegularFile returns true if the path refers to a regular file after
+// following symlinks.
+func IsRegularFile(path string) bool {
+	path, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return false
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular()
+}
+
 func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&os.ModeType == 0
 }
