@@ -37,20 +37,19 @@ const defaultConfigFilename = ".buildifier.json"
 // New constructs a Config with default values.
 func New() *Config {
 	return &Config{
-		InputType:  "auto",
-		ConfigPath: defaultConfigPath(),
+		InputType: "auto",
 	}
 }
 
-// defaultConfigPath locates the default buildifier configuration file.  First
-// tries the value of the BUILDIFIER_CONFIG environment variable.  If no
-// environment variable is defined, fallback to the file
-// `{WORKSPACE_DIR}/.buildifier.json`.
-func defaultConfigPath() string {
+// GetConfigPath locates the default buildifier configuration file.  First tries
+// the value of the BUILDIFIER_CONFIG environment variable.  If no environment
+// variable is defined, fallback to the file `{WORKSPACE_DIR}/.buildifier.json`
+// starting from the given directory.  Calls os.Stat.
+func GetConfigPath(rootDir string) string {
 	if rcFile, ok := os.LookupEnv("BUILDIFIER_CONFIG"); ok {
 		return rcFile
 	}
-	root, _ := wspace.FindWorkspaceRoot("")
+	root, _ := wspace.FindWorkspaceRoot(rootDir)
 	filename := filepath.Join(root, defaultConfigFilename)
 	if wspace.IsRegularFile(filename) {
 		return filename

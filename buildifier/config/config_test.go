@@ -451,7 +451,7 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestDefaultConfigPath(t *testing.T) {
+func TestGetConfigPath(t *testing.T) {
 	for name, tc := range map[string]struct {
 		files map[string]string
 		env   map[string]string
@@ -494,7 +494,7 @@ func TestDefaultConfigPath(t *testing.T) {
 				}
 			}
 
-			got := defaultConfigPath()
+			got := GetConfigPath(tmp)
 			if tc.want != got {
 				t.Errorf("default config path: want %s, got %s", tc.want, got)
 			}
