@@ -58,6 +58,7 @@ cp test_dir/.git/git.bzl golden/git.bzl
 "$buildifier" -r test_dir
 "$buildifier" test.bzl
 "$buildifier" --path=foo.bzl test2.bzl
+"$buildifier" --config=example > test_dir/.buildifier.example.json
 "$buildifier2" test_dir/test.bzl > test_dir/test.bzl.out
 
 cat > golden/BUILD.golden <<EOF
@@ -90,6 +91,78 @@ bazel_dep(name = "rules_cc", version = "0.0.1")
 bazel_dep(name = "protobuf", version = "3.19.0")
 EOF
 
+cat > golden/.buildifier.example.json <<EOF
+{
+  "type": "auto",
+  "mode": "fix",
+  "lint": "fix",
+  "warningsList": [
+    "attr-cfg",
+    "attr-license",
+    "attr-non-empty",
+    "attr-output-default",
+    "attr-single-file",
+    "build-args-kwargs",
+    "bzl-visibility",
+    "confusing-name",
+    "constant-glob",
+    "ctx-actions",
+    "ctx-args",
+    "deprecated-function",
+    "depset-items",
+    "depset-iteration",
+    "depset-union",
+    "dict-concatenation",
+    "duplicated-name",
+    "filetype",
+    "function-docstring",
+    "function-docstring-args",
+    "function-docstring-header",
+    "function-docstring-return",
+    "git-repository",
+    "http-archive",
+    "integer-division",
+    "keyword-positional-params",
+    "list-append",
+    "load",
+    "load-on-top",
+    "module-docstring",
+    "name-conventions",
+    "native-android",
+    "native-build",
+    "native-cc",
+    "native-java",
+    "native-package",
+    "native-proto",
+    "native-py",
+    "no-effect",
+    "out-of-order-load",
+    "output-group",
+    "overly-nested-depset",
+    "package-name",
+    "package-on-top",
+    "positional-args",
+    "print",
+    "provider-params",
+    "redefined-variable",
+    "repository-name",
+    "return-value",
+    "rule-impl-return",
+    "same-origin-load",
+    "skylark-comment",
+    "skylark-docstring",
+    "string-iteration",
+    "uninitialized",
+    "unnamed-macro",
+    "unreachable",
+    "unsorted-dict-items",
+    "unused-variable"
+  ],
+  "recursive": true,
+  "verbose": true
+}
+EOF
+
 diff test_dir/BUILD golden/BUILD.golden
 diff test_dir/test.bzl golden/test.bzl.golden
 diff test_dir/subdir/test.bzl golden/test.bzl.golden
@@ -101,6 +174,7 @@ diff stdout golden/test.bzl.golden
 diff test_dir/test.bzl.out golden/test.bzl.golden
 diff test_dir/.git/git.bzl golden/git.bzl
 diff test_dir/MODULE.bazel golden/MODULE.bazel.golden
+diff test_dir/.buildifier.example.json golden/.buildifier.example.json
 
 # Test run on a directory without -r
 "$buildifier" test_dir || ret=$?
