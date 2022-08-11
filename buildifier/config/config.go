@@ -222,3 +222,14 @@ func (i *ArrayFlags) Set(value string) error {
 	*i = append(*i, value)
 	return nil
 }
+
+func Example() *Config {
+	c := New()
+	c.Verbose = true
+	c.InputType = "auto"
+	c.Mode = "fix"
+	c.Lint = "fix"
+	c.WarningsList = warn.AllWarnings
+	c.Recursive = true
+	return c
+}

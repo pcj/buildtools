@@ -80,61 +80,74 @@ Return codes used by buildifier:
 Full list of flags with their defaults:
 `)
 	flag.PrintDefaults()
+
+	fmt.Fprintf(flag.CommandLine.Output(), `
+Buildifier can be also be configured via a JSON file.  The location of the file 
+is given by the -config flag, the BUILDIFIER_CONFIG environment variable, or 
+a file named '.buildifier.json' at the root of the workspace (e.g., in the same 
+directory as the WORKSPACE file).  If present, the file is loaded into memory 
+and becomes the base configuration that command line flags override.  A sample
+configuration file can be printed to stdout by running buildifier -config=example
+`)
 }
 
 func main() {
-	config := config.New()
+	c := config.New()
 
-	flags := config.FlagSet("buildifier", flag.ExitOnError)
+	flags := c.FlagSet("buildifier", flag.ExitOnError)
 	flag.CommandLine = flags
 	flag.Usage = usage
-	flags.Parse(os.Args)
+	flags.Parse(os.Args[1:])
 
-	if config.Help {
+	if c.Help {
 		flag.CommandLine.SetOutput(os.Stdout)
 		usage()
 		os.Exit(0)
 	}
 
-	if config.Version {
+	if c.Version {
 		fmt.Printf("buildifier version: %s \n", buildVersion)
 		fmt.Printf("buildifier scm revision: %s \n", buildScmRevision)
 		os.Exit(0)
 	}
 
-	if config.ConfigPath != "" {
-		if err := config.LoadFile(); err != nil {
+	if c.ConfigPath != "" {
+		if c.ConfigPath == "example" {
+			fmt.Println(config.Example().String())
+			os.Exit(0)
+		}
+		if err := c.LoadFile(); err != nil {
 			fmt.Fprintf(os.Stderr, "buildifier: %s\n", err)
 			os.Exit(2)
 		}
 	}
 
-	flags = config.FlagSet("buildifier", flag.ExitOnError)
+	flags = c.FlagSet("buildifier", flag.ExitOnError)
 	flag.CommandLine = flags
 	flag.Usage = usage
-	flags.Parse(os.Args)
+	flags.Parse(os.Args[1:])
 	args := flags.Args()
 
-	if err := config.Validate(args); err != nil {
+	if err := c.Validate(args); err != nil {
 		fmt.Fprintf(os.Stderr, "buildifier: %s\n", err)
 		os.Exit(2)
 	}
 
 	// Pass down debug flags into build package
-	build.DisableRewrites = config.DisableRewrites
-	build.AllowSort = config.AllowSort
+	build.DisableRewrites = c.DisableRewrites
+	build.AllowSort = c.AllowSort
 
 	differ, deprecationWarning := differ.Find()
-	if config.DiffCommand != "" {
-		differ.Cmd = config.DiffCommand
-		differ.MultiDiff = config.MultiDiff
+	if c.DiffCommand != "" {
+		differ.Cmd = c.DiffCommand
+		differ.MultiDiff = c.MultiDiff
 	} else {
-		if deprecationWarning && config.Mode == "diff" {
+		if deprecationWarning && c.Mode == "diff" {
 			fmt.Fprintf(os.Stderr, "buildifier: selecting diff program with the BUILDIFIER_DIFF, BUILDIFIER_MULTIDIFF, and DISPLAY environment variables is deprecated, use flags -diff_command and -multi_diff instead\n")
 		}
 	}
 
-	b := buildifier{config, differ}
+	b := buildifier{c, differ}
 	exitCode := b.run(args)
 	os.Exit(exitCode)
 }
