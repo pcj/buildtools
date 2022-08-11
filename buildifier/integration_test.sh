@@ -45,6 +45,7 @@ echo -e "$INPUT" > test_dir/subdir/build  # lowercase, should be ignored by -r
 echo -e "$INPUT" > test.bzl  # outside the test_dir directory
 echo -e "$INPUT" > test2.bzl  # outside the test_dir directory
 echo -e "not valid +" > test_dir/foo.bar
+echo -e '{ "type": "build" }' > test_dir/.buildifier.test.json # demonstrate config file works by overridding input type to format a bzl file as a BUILD file.
 mkdir test_dir/workspace  # name of a starlark file, but a directory
 mkdir test_dir/.git  # contents should be ignored
 echo -e "a+b" > test_dir/.git/git.bzl
@@ -58,6 +59,7 @@ cp test_dir/.git/git.bzl golden/git.bzl
 "$buildifier" -r test_dir
 "$buildifier" test.bzl
 "$buildifier" --path=foo.bzl test2.bzl
+"$buildifier" --config=test_dir/.buildifier.test.json < test_dir/test.bzl > test_dir/test.bzl.BUILD.out
 "$buildifier" --config=example > test_dir/.buildifier.example.json
 "$buildifier2" test_dir/test.bzl > test_dir/test.bzl.out
 
@@ -75,6 +77,7 @@ foo(
     ],
 )
 EOF
+
 cat > golden/test.bzl.golden <<EOF
 load(":foo.bzl", "foo")
 
@@ -166,6 +169,7 @@ EOF
 diff test_dir/BUILD golden/BUILD.golden
 diff test_dir/test.bzl golden/test.bzl.golden
 diff test_dir/subdir/test.bzl golden/test.bzl.golden
+diff test_dir/test.bzl.BUILD.out golden/BUILD.golden
 diff test_dir/subdir/build golden/build
 diff test_dir/foo.bar golden/foo.bar
 diff test.bzl golden/test.bzl.golden
