@@ -73,7 +73,7 @@ Return codes used by buildifier:
 
   0: success, everything went well
   1: syntax errors in input
-  2: usage errors: invoked incorrectly / configuration error
+  2: usage errors: invoked incorrectly
   3: unexpected runtime errors: file I/O problems or internal bugs
   4: check mode failed (reformat is needed)
 

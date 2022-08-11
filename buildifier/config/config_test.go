@@ -19,6 +19,8 @@ package config
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -444,6 +446,57 @@ func TestValidate(t *testing.T) {
 			}
 			if tc.wantErr.Error() != got.Error() {
 				t.Fatalf("error mismatch: want %v, got %v", tc.wantErr.Error(), got.Error())
+			}
+		})
+	}
+}
+
+func TestDefaultConfigPath(t *testing.T) {
+	for name, tc := range map[string]struct {
+		files map[string]string
+		env   map[string]string
+		want  string
+	}{
+		"no config file": {
+			want: "",
+		},
+		"default": {
+			files: map[string]string{
+				".buildifier.json": "{}",
+			},
+			want: ".buildifier.json",
+		},
+		"BUILDIFIER_CONFIG override": {
+			env: map[string]string{
+				"BUILDIFIER_CONFIG": ".buildifier2.json",
+			},
+			want: ".buildifier2.json",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			for k, v := range tc.env {
+				os.Setenv(k, v)
+			}
+
+			tmp, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(tmp)
+
+			if err := os.Chdir(tmp); err != nil {
+				t.Fatal(err)
+			}
+
+			for rel, content := range tc.files {
+				if err := ioutil.WriteFile(rel, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			got := defaultConfigPath()
+			if tc.want != got {
+				t.Errorf("default config path: want %s, got %s", tc.want, got)
 			}
 		})
 	}

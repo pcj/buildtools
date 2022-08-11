@@ -109,6 +109,7 @@ type Config struct {
 	LintWarnings []string `json:"-"`
 }
 
+// LoadFile unmarshals JSON file from the ConfigPath field.
 func (c *Config) LoadFile() error {
 	file, err := os.Open(c.ConfigPath)
 	if err != nil {
@@ -118,6 +119,7 @@ func (c *Config) LoadFile() error {
 	return c.LoadReader(file)
 }
 
+// LoadReader unmarshals JSON data from the given reader.
 func (c *Config) LoadReader(in io.Reader) error {
 	data, err := ioutil.ReadAll(in)
 	if err != nil {
@@ -129,7 +131,7 @@ func (c *Config) LoadReader(in io.Reader) error {
 	return nil
 }
 
-// FlagSet returns a flag.FlagSet that can be used to override the config
+// FlagSet returns a flag.FlagSet that can be used to override the config.
 func (c *Config) FlagSet(name string, errorHandling flag.ErrorHandling) *flag.FlagSet {
 	flags := flag.NewFlagSet(name, errorHandling)
 
@@ -203,6 +205,8 @@ func (c *Config) Validate(args []string) error {
 	return nil
 }
 
+// String renders the config as a formatted JSON string and satisfies the
+// Stringer interface.
 func (c *Config) String() string {
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
@@ -214,15 +218,18 @@ func (c *Config) String() string {
 // ArrayFlags is a string slice that satisfies the flag.Value interface
 type ArrayFlags []string
 
+// String implements part of the flag.Value interface
 func (i *ArrayFlags) String() string {
 	return strings.Join(*i, ",")
 }
 
+// Set implements part of the flag.Value interface
 func (i *ArrayFlags) Set(value string) error {
 	*i = append(*i, value)
 	return nil
 }
 
+// Example creates an sample configuration file for the -config=example flag.
 func Example() *Config {
 	c := New()
 	c.Verbose = true
