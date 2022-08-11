@@ -129,7 +129,7 @@ func main() {
 		differ.Cmd = config.DiffCommand
 		differ.MultiDiff = config.MultiDiff
 	} else {
-		if deprecationWarning && config.FormattingMode == "diff" {
+		if deprecationWarning && config.Mode == "diff" {
 			fmt.Fprintf(os.Stderr, "buildifier: selecting diff program with the BUILDIFIER_DIFF, BUILDIFIER_MULTIDIFF, and DISPLAY environment variables is deprecated, use flags -diff_command and -multi_diff instead\n")
 		}
 	}
@@ -157,8 +157,8 @@ func (b *buildifier) run(args []string) int {
 			fmt.Fprintf(os.Stderr, "buildifier: reading stdin: %v\n", err)
 			return 2
 		}
-		if b.config.FormattingMode == "fix" {
-			b.config.FormattingMode = "pipe"
+		if b.config.Mode == "fix" {
+			b.config.Mode = "pipe"
 		}
 		var fileDiagnostics *utils.FileDiagnostics
 		fileDiagnostics, exitCode = b.processFile("", data, false, tf)
@@ -283,7 +283,7 @@ func (b *buildifier) processFile(filename string, data []byte, displayFileNames 
 		f.WorkspaceRoot, f.Pkg, f.Label = wspace.SplitFilePath(absoluteFilename)
 	}
 
-	warnings := utils.Lint(f, b.config.LintMode, &b.config.LintWarnings, b.config.Verbose)
+	warnings := utils.Lint(f, b.config.Lint, &b.config.LintWarnings, b.config.Verbose)
 	if len(warnings) > 0 {
 		exitCode = 4
 	}

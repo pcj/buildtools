@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "diagnostics.go",
-        "flags.go",
         "tempfile.go",
         "utils.go",
     ],

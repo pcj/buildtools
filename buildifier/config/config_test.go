@@ -94,9 +94,9 @@ func ExampleFlagSet_parse() {
 	// {
 	//   "type": "default",
 	//   "format": "json",
-	//   "formattingMode": "fix",
+	//   "mode": "fix",
 	//   "diffMode": true,
-	//   "lintMode": "fix",
+	//   "lint": "fix",
 	//   "warnings": "+print,-no-effect",
 	//   "recursive": true,
 	//   "verbose": true,
@@ -115,52 +115,260 @@ func ExampleFlagSet_parse() {
 	// }
 }
 
-func ExampleFlagSet_validateInputType() {
-	c := New()
-	flags := c.FlagSet("buildifier", flag.ExitOnError)
-	flags.Parse([]string{
-		"--type=foo",
-	})
-	fmt.Print(c.Validate(nil))
-	// Output:
-	// unrecognized input type foo; valid types are build, bzl, workspace, default, module, auto
-}
-
-func ExampleFlagSet_validateFormat() {
-	c := New()
-	flags := c.FlagSet("buildifier", flag.ExitOnError)
-	flags.Parse([]string{
-		"--format=foo",
-	})
-	fmt.Print(c.Validate(nil))
-	// Output:
-	// unrecognized format foo; valid types are text, json
-}
-
 func TestValidate(t *testing.T) {
 	for name, tc := range map[string]struct {
-		options string
-		args    string
-		want    error
+		options      string
+		args         string
+		wantErr      error
+		wantMode     string   // optional
+		wantLint     string   // optional
+		wantWarnings []string // optional
 	}{
-		"mode fix ok": {options: "--mode=fix"},
+		"mode not set":          {wantMode: "fix"},
+		"mode check":            {options: "--mode=check", wantMode: "check"},
+		"mode diff":             {options: "--mode=diff", wantMode: "diff"},
+		"mode d":                {options: "-d", wantMode: "diff"},
+		"mode d error":          {options: "--mode=diff -d", wantErr: fmt.Errorf("cannot specify both -d and -mode flags")},
+		"mode fix":              {options: "--mode=fix", wantMode: "fix"},
+		"mode print_if_changed": {options: "--mode=print_if_changed", wantMode: "print_if_changed"},
+		"mode error":            {options: "--mode=foo", wantErr: fmt.Errorf("unrecognized mode foo; valid modes are check, diff, fix, print_if_changed")},
+		"lint not set":          {wantLint: "off"},
+		"lint off":              {options: "--lint=off", wantLint: "off"},
+		"lint warn":             {options: "--lint=warn", wantLint: "warn"},
+		"lint fix":              {options: "--lint=fix", wantLint: "fix"},
+		"lint fix error":        {options: "--lint=fix --mode=check", wantErr: fmt.Errorf("--lint=fix is only compatible with --mode=fix")},
+		"format mode error":     {options: "--mode=fix --format=text", wantErr: fmt.Errorf("cannot specify --format without --mode=check")},
+		"format text":           {options: "--mode=check --format=text"},
+		"format json":           {options: "--mode=check --format=json"},
+		"format error":          {options: "--mode=check --format=foo", wantErr: fmt.Errorf("unrecognized format foo; valid types are text, json")},
+		"type build":            {options: "--type=build"},
+		"type bzl":              {options: "--type=bzl"},
+		"type workspace":        {options: "--type=workspace"},
+		"type default":          {options: "--type=default"},
+		"type module":           {options: "--type=module"},
+		"type auto":             {options: "--type=auto"},
+		"type error":            {options: "--type=foo", wantErr: fmt.Errorf("unrecognized input type foo; valid types are build, bzl, workspace, default, module, auto")},
+		"warnings all": {options: "--warnings=all", wantWarnings: []string{
+			"attr-cfg",
+			"attr-license",
+			"attr-non-empty",
+			"attr-output-default",
+			"attr-single-file",
+			"build-args-kwargs",
+			"bzl-visibility",
+			"confusing-name",
+			"constant-glob",
+			"ctx-actions",
+			"ctx-args",
+			"deprecated-function",
+			"depset-items",
+			"depset-iteration",
+			"depset-union",
+			"dict-concatenation",
+			"duplicated-name",
+			"filetype",
+			"function-docstring",
+			"function-docstring-args",
+			"function-docstring-header",
+			"function-docstring-return",
+			"git-repository",
+			"http-archive",
+			"integer-division",
+			"keyword-positional-params",
+			"list-append",
+			"load",
+			"load-on-top",
+			"module-docstring",
+			"name-conventions",
+			"native-android",
+			"native-build",
+			"native-cc",
+			"native-java",
+			"native-package",
+			"native-proto",
+			"native-py",
+			"no-effect",
+			"out-of-order-load",
+			"output-group",
+			"overly-nested-depset",
+			"package-name",
+			"package-on-top",
+			"positional-args",
+			"print",
+			"provider-params",
+			"redefined-variable",
+			"repository-name",
+			"return-value",
+			"rule-impl-return",
+			"same-origin-load",
+			"skylark-comment",
+			"skylark-docstring",
+			"string-iteration",
+			"uninitialized",
+			"unnamed-macro",
+			"unreachable",
+			"unsorted-dict-items",
+			"unused-variable",
+		}},
+		"warnings default": {options: "--warnings=default", wantWarnings: []string{
+			"attr-cfg",
+			"attr-license",
+			"attr-non-empty",
+			"attr-output-default",
+			"attr-single-file",
+			"build-args-kwargs",
+			"bzl-visibility",
+			"confusing-name",
+			"constant-glob",
+			"ctx-actions",
+			"ctx-args",
+			"deprecated-function",
+			"depset-items",
+			"depset-iteration",
+			"depset-union",
+			"dict-concatenation",
+			"duplicated-name",
+			"filetype",
+			"function-docstring",
+			"function-docstring-args",
+			"function-docstring-header",
+			"function-docstring-return",
+			"git-repository",
+			"http-archive",
+			"integer-division",
+			"keyword-positional-params",
+			"list-append",
+			"load",
+			"load-on-top",
+			"module-docstring",
+			"name-conventions",
+			// "native-android",
+			"native-build",
+			// "native-cc",
+			// "native-java",
+			"native-package",
+			// "native-proto",
+			// "native-py",
+			"no-effect",
+			// "out-of-order-load",
+			"output-group",
+			"overly-nested-depset",
+			"package-name",
+			"package-on-top",
+			"positional-args",
+			"print",
+			"provider-params",
+			"redefined-variable",
+			"repository-name",
+			"return-value",
+			"rule-impl-return",
+			"same-origin-load",
+			"skylark-comment",
+			"skylark-docstring",
+			"string-iteration",
+			"uninitialized",
+			"unnamed-macro",
+			"unreachable",
+			// "unsorted-dict-items",
+			"unused-variable",
+		}},
+		"warnings plus/minus": {options: "--warnings=+out-of-order-load,-print,-deprecated-function", wantWarnings: []string{
+			"attr-cfg",
+			"attr-license",
+			"attr-non-empty",
+			"attr-output-default",
+			"attr-single-file",
+			"build-args-kwargs",
+			"bzl-visibility",
+			"confusing-name",
+			"constant-glob",
+			"ctx-actions",
+			"ctx-args",
+			// "deprecated-function",
+			"depset-items",
+			"depset-iteration",
+			"depset-union",
+			"dict-concatenation",
+			"duplicated-name",
+			"filetype",
+			"function-docstring",
+			"function-docstring-args",
+			"function-docstring-header",
+			"function-docstring-return",
+			"git-repository",
+			"http-archive",
+			"integer-division",
+			"keyword-positional-params",
+			"list-append",
+			"load",
+			"load-on-top",
+			"module-docstring",
+			"name-conventions",
+			// "native-android",
+			"native-build",
+			// "native-cc",
+			// "native-java",
+			"native-package",
+			// "native-proto",
+			// "native-py",
+			"no-effect",
+			"output-group",
+			"overly-nested-depset",
+			"package-name",
+			"package-on-top",
+			"positional-args",
+			// "print",
+			"provider-params",
+			"redefined-variable",
+			"repository-name",
+			"return-value",
+			"rule-impl-return",
+			"same-origin-load",
+			"skylark-comment",
+			"skylark-docstring",
+			"string-iteration",
+			"uninitialized",
+			"unnamed-macro",
+			"unreachable",
+			// "unsorted-dict-items",
+			"unused-variable",
+			"out-of-order-load",
+		}},
+		"warnings error": {options: "--warnings=out-of-order-load,-print,-deprecated-function", wantErr: fmt.Errorf(`warning categories with modifiers ("+" or "-") can't be mixed with raw warning categories`)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			c := New()
 			flags := c.FlagSet("buildifier", flag.ExitOnError)
 			flags.Parse(strings.Fields(tc.options))
 			got := c.Validate(strings.Fields(tc.args))
-			if tc.want == nil && got == nil {
+			if tc.wantMode != "" && tc.wantMode != c.Mode {
+				t.Fatalf("--mode mismatch: want %v, got %v", tc.wantMode, c.Mode)
+			}
+			if tc.wantLint != "" && tc.wantLint != c.Lint {
+				t.Fatalf("--lint mismatch: want %v, got %v", tc.wantLint, c.Lint)
+			}
+			if len(tc.wantWarnings) > 0 {
+				if len(tc.wantWarnings) != len(c.LintWarnings) {
+					t.Fatalf("--warnings mismatch: want %v, got %v", tc.wantWarnings, c.LintWarnings)
+				}
+				for i, wantWarning := range tc.wantWarnings {
+					gotWarning := c.LintWarnings[i]
+					if wantWarning != gotWarning {
+						t.Errorf("warning mismatch at list position %d: want %s, got %s", i, wantWarning, gotWarning)
+					}
+				}
+			}
+			if tc.wantErr == nil && got == nil {
 				return
 			}
-			if tc.want == nil && got != nil {
+			if tc.wantErr == nil && got != nil {
 				t.Fatalf("unexpected error: %v", got)
 			}
-			if tc.want != nil && got == nil {
-				t.Fatalf("expected error did not occur: %v", tc.want)
+			if tc.wantErr != nil && got == nil {
+				t.Fatalf("expected error did not occur: %v", tc.wantErr)
 			}
-			if tc.want.Error() != got.Error() {
-				t.Fatalf("error mismatch: want %v, got %v", tc.want.Error(), got.Error())
+			if tc.wantErr.Error() != got.Error() {
+				t.Fatalf("error mismatch: want %v, got %v", tc.wantErr.Error(), got.Error())
 			}
 		})
 	}

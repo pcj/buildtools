@@ -27,7 +27,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bazelbuild/buildtools/buildifier/utils"
 	"github.com/bazelbuild/buildtools/tables"
 	"github.com/bazelbuild/buildtools/warn"
 	"github.com/bazelbuild/buildtools/wspace"
@@ -67,12 +66,12 @@ type Config struct {
 	InputType string `json:"type,omitempty"`
 	// Format sets the diagnostics format: text or json (default text)
 	Format string `json:"format,omitempty"`
-	// FormattingMode determines the formatting mode: check, diff, or fix (default fix)
-	FormattingMode string `json:"formattingMode,omitempty"`
+	// Mode determines the formatting mode: check, diff, or fix (default fix)
+	Mode string `json:"mode,omitempty"`
 	// DiffMode is an alias for
 	DiffMode bool `json:"diffMode,omitempty"`
-	// LintMode determines the lint mode: off, warn, or fix (default off)
-	LintMode string `json:"lintMode,omitempty"`
+	// Lint determines the lint mode: off, warn, or fix (default off)
+	Lint string `json:"lint,omitempty"`
 	// Warnings is a comma-separated list of warning identifiers used in the lint mode or "all"
 	Warnings string `json:"warnings,omitempty"`
 	// WarningsList is the a list of of warnings (alternative to comma-separated warnings string)
@@ -139,11 +138,11 @@ func (c *Config) FlagSet(name string, errorHandling flag.ErrorHandling) *flag.Fl
 	flags.BoolVar(&c.Verbose, "v", c.Verbose, "print verbose information to standard error")
 	flags.BoolVar(&c.DiffMode, "d", c.DiffMode, "alias for -mode=diff")
 	flags.BoolVar(&c.Recursive, "r", c.Recursive, "find starlark files recursively")
-	flags.StringVar(&c.FormattingMode, "mode", c.FormattingMode, "formatting mode: check, diff, or fix (default fix)")
+	flags.BoolVar(&c.MultiDiff, "multi_diff", c.MultiDiff, "the command specified by the -diff_command flag can diff multiple files in the style of tkdiff (default false)")
+	flags.StringVar(&c.Mode, "mode", c.Mode, "formatting mode: check, diff, or fix (default fix)")
 	flags.StringVar(&c.Format, "format", c.Format, "diagnostics format: text or json (default text)")
 	flags.StringVar(&c.DiffCommand, "diff_command", c.DiffCommand, "command to run when the formatting mode is diff (default uses the BUILDIFIER_DIFF, BUILDIFIER_MULTIDIFF, and DISPLAY environment variables to create the diff command)")
-	flags.BoolVar(&c.MultiDiff, "multi_diff", c.MultiDiff, "the command specified by the -diff_command flag can diff multiple files in the style of tkdiff (default false)")
-	flags.StringVar(&c.LintMode, "lint", c.LintMode, "lint mode: off, warn, or fix (default off)")
+	flags.StringVar(&c.Lint, "lint", c.Lint, "lint mode: off, warn, or fix (default off)")
 	flags.StringVar(&c.Warnings, "warnings", c.Warnings, "comma-separated warnings used in the lint mode or \"all\"")
 	flags.StringVar(&c.WorkspaceRelativePath, "path", c.WorkspaceRelativePath, "assume BUILD file has this path relative to the workspace directory")
 	flags.StringVar(&c.TablesPath, "tables", c.TablesPath, "path to JSON file with custom table definitions which will replace the built-in tables")
@@ -160,21 +159,21 @@ func (c *Config) FlagSet(name string, errorHandling flag.ErrorHandling) *flag.Fl
 // set.  It computes the final set of warnings used for linting.  The tables
 // package is configured as a side-effect.
 func (c *Config) Validate(args []string) error {
-	if err := utils.ValidateInputType(&c.InputType); err != nil {
+	if err := validateInputType(&c.InputType); err != nil {
 		return err
 	}
 
-	if err := utils.ValidateFormat(&c.Format, &c.FormattingMode); err != nil {
+	if err := validateFormat(&c.Format, &c.Mode); err != nil {
 		return err
 	}
 
-	if err := utils.ValidateModes(&c.Format, &c.LintMode, &c.DiffMode); err != nil {
+	if err := validateModes(&c.Mode, &c.Lint, &c.DiffMode); err != nil {
 		return err
 	}
 
 	// If the path flag is set, must only be formatting a single file.
 	// It doesn't make sense for multiple files to have the same path.
-	if (c.WorkspaceRelativePath != "" || c.FormattingMode == "print_if_changed") && len(args) > 1 {
+	if (c.WorkspaceRelativePath != "" || c.Mode == "print_if_changed") && len(args) > 1 {
 		return fmt.Errorf("can only format one file when using -path flag or -mode=print_if_changed")
 	}
 
@@ -195,7 +194,7 @@ func (c *Config) Validate(args []string) error {
 		warningsList = append(warningsList, c.Warnings)
 	}
 	warnings := strings.Join(warningsList, ",")
-	lintWarnings, err := utils.ValidateWarnings(&warnings, &warn.AllWarnings, &warn.DefaultWarnings)
+	lintWarnings, err := validateWarnings(&warnings, &warn.AllWarnings, &warn.DefaultWarnings)
 	if err != nil {
 		return err // TODO(pcj) return nil?
 	}
@@ -217,10 +216,6 @@ type ArrayFlags []string
 
 func (i *ArrayFlags) String() string {
 	return strings.Join(*i, ",")
-}
-
-func (i *ArrayFlags) Slice() []string {
-	return *i
 }
 
 func (i *ArrayFlags) Set(value string) error {
