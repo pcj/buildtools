@@ -304,7 +304,7 @@ func (b *buildifier) processFile(filename string, data []byte, displayFileNames 
 
 	ndata := build.Format(f)
 
-	switch b.config.Format {
+	switch b.config.Mode {
 	case "check":
 		// check mode: print names of files that need formatting.
 		if !bytes.Equal(data, ndata) {
