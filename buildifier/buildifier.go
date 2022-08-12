@@ -112,16 +112,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	if c.ConfigPath == "" && c.ConfigPath != "off" {
-		rootDir := utils.CommonPrefix(filepath.Separator, args...)
-		if rootDir == "" {
-			if cwd, ok := os.LookupEnv("PWD"); ok {
-				rootDir = cwd
-			}
-		}
-		if rootDir == "" {
-			cwd, _ := os.Getwd()
-			rootDir = cwd
+	if c.ConfigPath == "" {
+		var rootDir string
+		if pwd, ok := os.LookupEnv("PWD"); ok {
+			rootDir = pwd
+		} else {
+			rootDir, _ = os.Getwd()
 		}
 		c.ConfigPath = config.GetConfigPath(rootDir)
 	}
