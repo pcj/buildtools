@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -94,6 +95,18 @@ with -config=off.
 `)
 }
 
+var logFile string
+
+func init() {
+	tmpDir := os.TempDir()
+	logFile = filepath.Join(tmpDir, "buildifier.log")
+	f, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening log file: %v", err)
+	}
+	log.SetOutput(f)
+}
+
 func main() {
 	c := config.New()
 
@@ -103,9 +116,16 @@ func main() {
 	flags.Parse(os.Args[1:])
 	args := flags.Args()
 
+	log.Println("---------------------------")
+	log.Println("os.Args:", os.Args)
+	log.Println("env:", os.Environ())
+	log.Println("args:", args)
+
 	if c.Help {
 		flag.CommandLine.SetOutput(os.Stdout)
 		usage()
+		fmt.Println()
+		fmt.Println("logfile:", logFile)
 		os.Exit(0)
 	}
 
@@ -122,6 +142,7 @@ func main() {
 		} else {
 			rootDir, _ = os.Getwd() // best-effort, ignoring error
 		}
+		log.Println("configPath rootDir:", rootDir)
 		c.ConfigPath = config.GetConfigPath(rootDir)
 	}
 	if c.ConfigPath != "" {
