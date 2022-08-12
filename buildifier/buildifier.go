@@ -85,9 +85,12 @@ Full list of flags with their defaults:
 Buildifier can be also be configured via a JSON file.  The location of the file 
 is given by the -config flag, the BUILDIFIER_CONFIG environment variable, or 
 a file named '.buildifier.json' at the root of the workspace (e.g., in the same 
-directory as the WORKSPACE file).  If present, the file is loaded into memory 
-and becomes the base configuration that command line flags override.  A sample
-configuration file can be printed to stdout by running buildifier -config=example
+directory as the WORKSPACE file).  The PWD environment variable or process 
+working directory is used to help find the workspace root.  If present, the file
+is loaded into memory and becomes the base configuration that command line flags
+override.  A sample configuration file can be printed to stdout by running 
+buildifier -config=example. The config file feature can be disabled completely 
+with -config=off.
 `)
 }
 
@@ -117,24 +120,26 @@ func main() {
 		if pwd, ok := os.LookupEnv("PWD"); ok {
 			rootDir = pwd
 		} else {
-			rootDir, _ = os.Getwd()
+			rootDir, _ = os.Getwd() // best-effort, ignoring error
 		}
 		c.ConfigPath = config.GetConfigPath(rootDir)
 	}
-	if c.ConfigPath != "" && c.ConfigPath != "off" {
+	if c.ConfigPath != "" {
 		if c.ConfigPath == "example" {
 			fmt.Println(config.Example().String())
 			os.Exit(0)
 		}
-		if err := c.LoadFile(); err != nil {
-			fmt.Fprintf(os.Stderr, "buildifier: %s\n", err)
-			os.Exit(2)
+		if c.ConfigPath != "off" {
+			if err := c.LoadFile(); err != nil {
+				fmt.Fprintf(os.Stderr, "buildifier: %s\n", err)
+				os.Exit(2)
+			}
+			// re-parse with new possibly new defaults
+			flags = c.FlagSet("buildifier", flag.ExitOnError)
+			flag.CommandLine = flags
+			flag.Usage = usage
+			flags.Parse(os.Args[1:])
 		}
-		// re-parse with new possibly new defaults
-		flags = c.FlagSet("buildifier", flag.ExitOnError)
-		flag.CommandLine = flags
-		flag.Usage = usage
-		flags.Parse(os.Args[1:])
 	}
 
 	if err := c.Validate(args); err != nil {
