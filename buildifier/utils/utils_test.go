@@ -17,7 +17,6 @@ limitations under the License.
 package utils
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -135,56 +134,6 @@ func TestIsStarlarkFile(t *testing.T) {
 	for _, tc := range tests {
 		if isStarlarkFile(tc.filename) != tc.ok {
 			t.Errorf("Wrong result for %q, want %t", tc.filename, tc.ok)
-		}
-	}
-}
-
-func TestCommonPrefix(t *testing.T) {
-	tests := map[string]struct {
-		paths []string
-		want  string
-	}{
-		"degenerate": {},
-		"single": {
-			paths: []string{
-				"/src/main/java",
-			},
-			want: "/src/main/java",
-		},
-		"common dir": {
-			paths: []string{
-				"/src/main/java",
-				"/src/main/test",
-			},
-			want: "/src/main",
-		},
-		"common name": {
-			paths: []string{
-				"/src/main/java",
-				"/src/main/java2",
-			},
-			want: "/src/main",
-		},
-		"disjoint": {
-			paths: []string{
-				"/src/main/java",
-				"/test/main/java",
-			},
-			want: "",
-		},
-		"windows": {
-			paths: []string{
-				`c:\src\main\java`,
-				`c:\src\main\test`,
-			},
-			want: `c:\src\main\`,
-		},
-	}
-
-	for _, tc := range tests {
-		got := CommonPrefix(filepath.Separator, tc.paths...)
-		if tc.want != got {
-			t.Errorf("CommonPrefix: want %q, got %q", tc.want, got)
 		}
 	}
 }
