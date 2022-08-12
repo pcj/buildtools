@@ -231,11 +231,9 @@ func (i *ArrayFlags) Set(value string) error {
 // Example creates an sample configuration file for the -config=example flag.
 func Example() *Config {
 	c := New()
-	c.Verbose = true
 	c.InputType = "auto"
 	c.Mode = "fix"
 	c.Lint = "fix"
 	c.WarningsList = warn.AllWarnings
-	c.Recursive = true
 	return c
 }

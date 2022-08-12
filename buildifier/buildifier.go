@@ -113,8 +113,17 @@ func main() {
 	}
 
 	if c.ConfigPath == "" && c.ConfigPath != "off" {
-		commonDir := utils.CommonPrefix(filepath.Separator, args...)
-		c.ConfigPath = config.GetConfigPath(commonDir)
+		rootDir := utils.CommonPrefix(filepath.Separator, args...)
+		if rootDir == "" {
+			if cwd, ok := os.LookupEnv("PWD"); ok {
+				rootDir = cwd
+			}
+		}
+		if rootDir == "" {
+			cwd, _ := os.Getwd()
+			rootDir = cwd
+		}
+		c.ConfigPath = config.GetConfigPath(rootDir)
 	}
 	if c.ConfigPath != "" && c.ConfigPath != "off" {
 		if c.ConfigPath == "example" {
@@ -125,12 +134,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "buildifier: %s\n", err)
 			os.Exit(2)
 		}
+		// re-parse with new possibly new defaults
+		flags = c.FlagSet("buildifier", flag.ExitOnError)
+		flag.CommandLine = flags
+		flag.Usage = usage
+		flags.Parse(os.Args[1:])
 	}
-
-	flags = c.FlagSet("buildifier", flag.ExitOnError)
-	flag.CommandLine = flags
-	flag.Usage = usage
-	flags.Parse(os.Args[1:])
 
 	if err := c.Validate(args); err != nil {
 		fmt.Fprintf(os.Stderr, "buildifier: %s\n", err)
@@ -153,6 +162,7 @@ func main() {
 
 	b := buildifier{c, differ}
 	exitCode := b.run(args)
+
 	os.Exit(exitCode)
 }
 
