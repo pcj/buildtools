@@ -117,8 +117,7 @@ func main() {
 	}
 
 	if c.ConfigPath == "" {
-		rootDir, _ := os.Getwd() // best-effort, ignoring error
-		c.ConfigPath = config.GetConfigPath(rootDir)
+		c.ConfigPath = config.FindConfigPath()
 	}
 	if c.ConfigPath != "" {
 		if c.ConfigPath == "example" {
