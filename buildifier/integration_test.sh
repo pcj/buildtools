@@ -160,9 +160,7 @@ cat > golden/.buildifier.example.json <<EOF
     "unreachable",
     "unsorted-dict-items",
     "unused-variable"
-  ],
-  "recursive": true,
-  "verbose": true
+  ]
 }
 EOF
 

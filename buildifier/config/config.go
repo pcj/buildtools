@@ -46,12 +46,14 @@ func New() *Config {
 // environment variable is defined, The configuration file will be resolved
 // starting from the process cwd and searching up the file tree until a config
 // file is (or isn't) found.
-func FindConfigPath() string {
+func FindConfigPath(rootDir string) string {
 	if filename, ok := os.LookupEnv("BUILDIFIER_CONFIG"); ok {
 		return filename
 	}
-	rootDir, _ := os.Getwd() // best-effort, ignore error
-	dirname, _ := wspace.Find(
+	if rootDir == "" {
+		rootDir, _ = os.Getwd() // best-effort, ignore error
+	}
+	dirname, err := wspace.Find(
 		rootDir,
 		map[string]func(os.FileInfo) bool{
 			buildifierJSONFilename: func(fi os.FileInfo) bool {
@@ -59,6 +61,9 @@ func FindConfigPath() string {
 			},
 		},
 	)
+	if err != nil {
+		return ""
+	}
 	return filepath.Join(dirname, buildifierJSONFilename)
 }
 

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -103,9 +104,7 @@ func ExampleExample() {
 	//     "unreachable",
 	//     "unsorted-dict-items",
 	//     "unused-variable"
-	//   ],
-	//   "recursive": true,
-	//   "verbose": true
+	//   ]
 	// }
 }
 
@@ -451,13 +450,13 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestGetConfigPath(t *testing.T) {
+func TestFindConfigPath(t *testing.T) {
 	for name, tc := range map[string]struct {
 		files map[string]string
 		env   map[string]string
 		want  string
 	}{
-		"no config file": {
+		"no-config-file": {
 			want: "",
 		},
 		"default": {
@@ -466,7 +465,7 @@ func TestGetConfigPath(t *testing.T) {
 			},
 			want: ".buildifier.json",
 		},
-		"BUILDIFIER_CONFIG override": {
+		"BUILDIFIER_CONFIG-override": {
 			env: map[string]string{
 				"BUILDIFIER_CONFIG": ".buildifier2.json",
 			},
@@ -478,7 +477,7 @@ func TestGetConfigPath(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			tmp, err := ioutil.TempDir("", "")
+			tmp, err := ioutil.TempDir("", name+"*")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -488,15 +487,27 @@ func TestGetConfigPath(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			t.Log("tmp:", tmp)
+
 			for rel, content := range tc.files {
-				if err := ioutil.WriteFile(rel, []byte(content), 0644); err != nil {
+				dir := filepath.Join(tmp, filepath.Dir(rel))
+				if dir != "." {
+					if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+						t.Fatal(err)
+					}
+				}
+				filename := filepath.Join(dir, rel)
+				if err := ioutil.WriteFile(filename, []byte(content), 0644); err != nil {
 					t.Fatal(err)
 				}
 			}
 
-			got := GetConfigPath(tmp)
+			got := FindConfigPath(tmp)
+			got = strings.TrimPrefix(got, tmp)
+			got = strings.TrimPrefix(got, "/")
+
 			if tc.want != got {
-				t.Errorf("default config path: want %s, got %s", tc.want, got)
+				t.Errorf("FindConfigPath: want %q, got %q", tc.want, got)
 			}
 		})
 	}

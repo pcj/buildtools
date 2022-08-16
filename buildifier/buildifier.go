@@ -117,7 +117,7 @@ func main() {
 	}
 
 	if c.ConfigPath == "" {
-		c.ConfigPath = config.FindConfigPath()
+		c.ConfigPath = config.FindConfigPath("")
 	}
 	if c.ConfigPath != "" {
 		if c.ConfigPath == "example" {
