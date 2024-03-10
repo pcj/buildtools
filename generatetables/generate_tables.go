@@ -27,7 +27,7 @@ import (
 	"os"
 	"sort"
 
-	buildpb "github.com/bazelbuild/buildtools/build_proto"
+	buildpb "github.com/bazelbuild/bazelapis/src/main/protobuf/build"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -83,7 +83,7 @@ func generateTable(rules []*buildpb.RuleDefinition) map[string]buildpb.Attribute
 
 	// Make sure we always have this.
 	_, ok := types["package_metadata"]
-	if ! ok {
+	if !ok {
 		types["package_metadata"] = buildpb.Attribute_LABEL_LIST
 	}
 
@@ -118,7 +118,7 @@ func main() {
 	fmt.Fprintf(f, `// Generated file, do not edit.
 package lang
 
-import buildpb "github.com/bazelbuild/buildtools/build_proto"
+import buildpb "github.com/bazelbuild/bazelapis/src/main/protobuf/build"
 
 var TypeOf = map[string]buildpb.Attribute_Discriminator{
 `)

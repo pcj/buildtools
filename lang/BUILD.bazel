@@ -25,7 +25,7 @@ go_library(
     importpath = "github.com/bazelbuild/buildtools/lang",
     visibility = ["//visibility:public"],
     deps = [
-        "//build_proto",  # keep
+        "@bazelapis//src/main/protobuf:build_go_proto",  # keep
     ],
 )
 
