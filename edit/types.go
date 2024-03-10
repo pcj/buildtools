@@ -19,7 +19,7 @@ limitations under the License.
 package edit
 
 import (
-	buildpb "github.com/bazelbuild/buildtools/build_proto"
+	buildpb "github.com/bazelbuild/bazelapis/src/main/protobuf/build"
 	"github.com/bazelbuild/buildtools/lang"
 	"github.com/bazelbuild/buildtools/tables"
 )

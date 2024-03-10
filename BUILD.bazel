@@ -20,7 +20,6 @@ filegroup(
 test_suite(
     name = "tests",
     tests = [
-        "//api_proto:api.gen.pb.go_checkshtest",
         "//build:build_test",
         "//build_proto:build.gen.pb.go_checkshtest",
         "//buildifier:buildifier_integration_test",

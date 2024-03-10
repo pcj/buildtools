@@ -1,36 +1,28 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//build:build_defs.bzl", "go_proto_checkedin_test")
-
-# gazelle:exclude api.gen.pb.go
-
-go_proto_checkedin_test(
-    src = "api.gen.pb.go",
-)
+load("@build_stack_rules_proto//rules/go:proto_go_library.bzl", "proto_go_library")
+load("@build_stack_rules_proto//rules:proto_compile.bzl", "proto_compile")
 
 proto_library(
-    name = "api_proto_proto",
+    name = "api_proto",
     srcs = ["api.proto"],
     visibility = ["//visibility:public"],
 )
 
-go_proto_library(
-    name = "api_proto_go_proto",
-    importpath = "github.com/bazelbuild/buildtools/api_proto",
-    proto = ":api_proto_proto",
-    visibility = ["//visibility:public"],
+proto_compile(
+    name = "api_go_compile",
+    output_mappings = ["api.pb.go=github.com/bazelbuild/buildtools/api_proto/api.pb.go"],
+    outputs = ["api.pb.go"],
+    plugins = ["@build_stack_rules_proto//plugin/golang/protobuf:protoc-gen-go"],
+    proto = "api_proto",
 )
 
-go_library(
-    name = "api_proto",
-    embed = [":api_proto_go_proto"],
+proto_go_library(
+    name = "api_go_proto",
+    srcs = ["api.pb.go"],
     importpath = "github.com/bazelbuild/buildtools/api_proto",
     visibility = ["//visibility:public"],
-)
-
-alias(
-    name = "go_default_library",
-    actual = ":api_proto",
-    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//runtime/protoimpl",
+    ],
 )
